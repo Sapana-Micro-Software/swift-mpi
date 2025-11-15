@@ -8,6 +8,7 @@ This directory contains documentation for the SwiftMPI framework.
 
 - **`paper.tex`**: LaTeX source for the SwiftMPI research paper
 - **`presentation.tex`**: Beamer presentation source for talks and demos
+- **`reference.tex`**: API reference with usage examples for all SwiftMPI functions
 - **`Makefile`**: Build script for generating PDFs
 
 ## Building Documentation
@@ -25,7 +26,7 @@ You need a LaTeX distribution installed:
 #### Using Makefile (Recommended)
 
 ```bash
-# Build both paper and presentation
+# Build all documentation (paper, presentation, and reference)
 make all
 
 # Build only the paper
@@ -33,6 +34,9 @@ make paper
 
 # Build only the presentation
 make presentation
+
+# Build only the reference
+make reference
 
 # Clean generated files
 make clean
@@ -56,6 +60,11 @@ pdflatex paper.tex
 pdflatex presentation.tex
 ```
 
+**Reference:**
+```bash
+pdflatex reference.tex
+```
+
 ## Paper
 
 The paper (`paper.tex`) describes:
@@ -75,11 +84,24 @@ The Beamer presentation (`presentation.tex`) includes:
 - Performance benchmarks
 - Future roadmap
 
+## Reference
+
+The API reference (`reference.tex`) provides:
+- Complete function reference for all SwiftMPI operations
+- Usage examples for each function
+- Point-to-point communication examples
+- Collective operation examples
+- Non-blocking communication examples
+- Datatype and operation references
+- Error handling examples
+- Complete working examples
+
 ## Output Files
 
 After building, you'll get:
 - `paper.pdf`: The research paper
 - `presentation.pdf`: The Beamer presentation
+- `reference.pdf`: The API reference manual
 
 ## Notes
 

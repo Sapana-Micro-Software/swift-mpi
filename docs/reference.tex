@@ -1,0 +1,1292 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{longtable}
+\geometry{margin=1in}
+
+\title{SwiftMPI API Reference\\Function Reference with Usage Examples}
+\author{SwiftMPI Documentation}
+\date{2025}
+
+\lstset{
+    language=Swift,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    stringstyle=\color{red},
+    commentstyle=\color{green},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=5pt,
+    backgroundcolor=\color{gray!10},
+    frame=single,
+    breaklines=true,
+    breakatwhitespace=true,
+    tabsize=4
+}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+\section{Initialization and Finalization}
+
+\subsection{SwiftMPI.initialize()}
+
+Initialize MPI environment without command line arguments.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+do {
+    try SwiftMPI.initialize()
+    // MPI is now initialized
+} catch {
+    print("MPI initialization failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{SwiftMPI.initialize(argc:argv:)}
+
+Initialize MPI environment with command line arguments.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let argc = CommandLine.argc
+let argv = CommandLine.unsafeArgv
+
+do {
+    try SwiftMPI.initialize(argc: argc, argv: argv)
+    // MPI is now initialized
+} catch {
+    print("MPI initialization failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{SwiftMPI.finalize()}
+
+Finalize MPI environment and clean up resources.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+do {
+    try SwiftMPI.finalize()
+    // MPI resources cleaned up
+} catch {
+    print("MPI finalization failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{SwiftMPI.wtime()}
+
+Get wall clock time in seconds since arbitrary time.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let startTime = SwiftMPI.wtime()
+// ... perform computation ...
+let endTime = SwiftMPI.wtime()
+let elapsed = endTime - startTime
+print("Computation took \(elapsed) seconds")
+\end{lstlisting}
+
+\subsection{SwiftMPI.wtick()}
+
+Get resolution of MPI\_Wtime in seconds.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let resolution = SwiftMPI.wtick()
+print("Time resolution: \(resolution) seconds")
+\end{lstlisting}
+
+\subsection{SwiftMPI.world}
+
+Get world communicator containing all processes.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let rank = comm.rank()
+let size = comm.size()
+print("Process \(rank) of \(size)")
+\end{lstlisting}
+
+\subsection{SwiftMPI.abort(comm:errorCode:)}
+
+Abort all MPI processes with specified error code.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+if someErrorCondition {
+    SwiftMPI.abort(comm: SwiftMPI.world, errorCode: 1)
+    // Process exits with error code 1
+}
+\end{lstlisting}
+
+\section{Communicator Operations}
+
+\subsection{Communicator.rank()}
+
+Get rank of current process in this communicator.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let myRank = comm.rank()
+print("My rank is \(myRank)")
+\end{lstlisting}
+
+\subsection{Communicator.size()}
+
+Get number of processes in this communicator.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let totalProcesses = comm.size()
+print("Total processes: \(totalProcesses)")
+\end{lstlisting}
+
+\subsection{Communicator.duplicate()}
+
+Duplicate this communicator creating new independent communicator.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+do {
+    let newComm = try comm.duplicate()
+    // Use newComm independently
+} catch {
+    print("Failed to duplicate communicator: \(error)")
+}
+\end{lstlisting}
+
+\subsection{Communicator.free()}
+
+Free this communicator and release associated resources.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+do {
+    try comm.free()
+    // Communicator resources released
+} catch {
+    print("Failed to free communicator: \(error)")
+}
+\end{lstlisting}
+
+\section{Point-to-Point Communication}
+
+\subsection{Communicator.send(\_:count:datatype:dest:tag:)}
+
+Blocking send operation sending data to destination process.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let rank = comm.rank()
+let data: [Int32] = [1, 2, 3, 4, 5]
+
+if rank == 0 {
+    do {
+        try data.withUnsafeBufferPointer { buffer in
+            try comm.send(buffer, count: data.count, 
+                         datatype: .int, dest: 1, tag: 0)
+        }
+        print("Sent data to process 1")
+    } catch {
+        print("Send failed: \(error)")
+    }
+}
+\end{lstlisting}
+
+\subsection{Communicator.receive(\_:count:datatype:source:tag:)}
+
+Blocking receive operation receiving data from source process.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let rank = comm.rank()
+
+if rank == 1 {
+    var buffer = [Int32](repeating: 0, count: 5)
+    do {
+        let status = try buffer.withUnsafeMutableBufferPointer { buf in
+            try comm.receive(buf, count: 5, datatype: .int, 
+                           source: 0, tag: 0)
+        }
+        print("Received \(status.elementCount) elements from process \(status.source)")
+        print("Data: \(buffer)")
+    } catch {
+        print("Receive failed: \(error)")
+    }
+}
+\end{lstlisting}
+
+\subsection{Communicator.send(\_:to:tag:) - Convenience for Int32}
+
+Send array of integers to destination process.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let data: [Int32] = [10, 20, 30]
+
+do {
+    try comm.send(data, to: 1, tag: 0)
+    print("Sent integer array")
+} catch {
+    print("Send failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{Communicator.receive(count:from:tag:) - Convenience for Int32}
+
+Receive array of integers from source process.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+
+do {
+    let received = try comm.receive(count: 3, from: 0, tag: 0)
+    print("Received: \(received)")
+} catch {
+    print("Receive failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{Communicator.send(\_:to:tag:) - Convenience for Double}
+
+Send array of doubles to destination process.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let data: [Double] = [3.14, 2.71, 1.41]
+
+do {
+    try comm.send(data, to: 1, tag: 1)
+    print("Sent double array")
+} catch {
+    print("Send failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{Communicator.receiveDoubles(count:from:tag:)}
+
+Receive array of doubles from source process.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+
+do {
+    let received = try comm.receiveDoubles(count: 3, from: 0, tag: 1)
+    print("Received doubles: \(received)")
+} catch {
+    print("Receive failed: \(error)")
+}
+\end{lstlisting}
+
+\section{Non-blocking Communication}
+
+\subsection{Communicator.isend(\_:count:datatype:dest:tag:)}
+
+Non-blocking send operation initiating asynchronous send.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let data: [Int32] = [1, 2, 3, 4, 5]
+
+do {
+    let request = try data.withUnsafeBufferPointer { buffer in
+        try comm.isend(buffer, count: data.count, 
+                      datatype: .int, dest: 1, tag: 0)
+    }
+    // Continue with other work...
+    let status = try request.wait()
+    print("Send completed")
+} catch {
+    print("Isend failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{Communicator.ireceive(\_:count:datatype:source:tag:)}
+
+Non-blocking receive operation initiating asynchronous receive.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+var buffer = [Int32](repeating: 0, count: 5)
+
+do {
+    let request = try buffer.withUnsafeMutableBufferPointer { buf in
+        try comm.ireceive(buf, count: 5, datatype: .int, 
+                         source: 0, tag: 0)
+    }
+    // Continue with other work...
+    let status = try request.wait()
+    print("Receive completed: \(buffer)")
+} catch {
+    print("Ireceive failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{Request.wait()}
+
+Wait for this request to complete and return status.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let data: [Int32] = [1, 2, 3]
+
+do {
+    let request = try comm.send(data, to: 1, tag: 0)
+    // Do other work...
+    let status = try request.wait()
+    print("Request completed")
+} catch {
+    print("Wait failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{Request.test()}
+
+Test if this request has completed without blocking.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let data: [Int32] = [1, 2, 3]
+
+do {
+    let request = try comm.send(data, to: 1, tag: 0)
+    
+    while true {
+        let (completed, status) = try request.test()
+        if completed {
+            print("Request completed")
+            break
+        }
+        // Do other work while waiting...
+        usleep(1000)
+    }
+} catch {
+    print("Test failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{waitAll(\_:)}
+
+Wait for multiple requests to complete.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let rank = comm.rank()
+
+do {
+    var requests: [Request] = []
+    
+    // Initiate multiple sends
+    for dest in 0..<comm.size() {
+        if dest != rank {
+            let data: [Int32] = [Int32(rank), Int32(dest)]
+            let req = try comm.send(data, to: dest, tag: 0)
+            requests.append(req)
+        }
+    }
+    
+    // Wait for all to complete
+    let statuses = try waitAll(requests)
+    print("All sends completed")
+} catch {
+    print("WaitAll failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{testAll(\_:)}
+
+Test if all requests in array have completed without blocking.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+
+do {
+    var requests: [Request] = []
+    // ... create requests ...
+    
+    while true {
+        let (allCompleted, statuses) = try testAll(requests)
+        if allCompleted {
+            print("All requests completed")
+            break
+        }
+        // Continue working...
+        usleep(1000)
+    }
+} catch {
+    print("TestAll failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{waitAny(\_:)}
+
+Wait for any one request in array to complete.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+
+do {
+    var requests: [Request] = []
+    // ... create multiple requests ...
+    
+    let (index, status) = try waitAny(requests)
+    print("Request \(index) completed first")
+} catch {
+    print("WaitAny failed: \(error)")
+}
+\end{lstlisting}
+
+\section{Collective Operations}
+
+\subsection{Communicator.barrier()}
+
+Barrier synchronization - all processes wait until all arrive.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let rank = comm.rank()
+
+print("Process \(rank) before barrier")
+do {
+    try comm.barrier()
+    print("Process \(rank) after barrier")
+} catch {
+    print("Barrier failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{Communicator.broadcast(\_:count:datatype:root:)}
+
+Broadcast operation - root sends data to all processes.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let rank = comm.rank()
+var data: [Int32] = [0, 0, 0]
+
+if rank == 0 {
+    data = [10, 20, 30]
+}
+
+do {
+    try data.withUnsafeMutableBufferPointer { buffer in
+        try comm.broadcast(buffer, count: 3, 
+                          datatype: .int, root: 0)
+    }
+    print("Process \(rank) received: \(data)")
+} catch {
+    print("Broadcast failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{Communicator.reduce(sendBuffer:recvBuffer:count:datatype:op:root:)}
+
+Reduce operation - combine values from all processes to root.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let rank = comm.rank()
+let sendValue: [Int32] = [Int32(rank + 1)]
+var recvValue: [Int32] = [0]
+
+do {
+    try sendValue.withUnsafeBufferPointer { sendBuf in
+        try recvValue.withUnsafeMutableBufferPointer { recvBuf in
+            try comm.reduce(sendBuffer: sendBuf, 
+                          recvBuffer: recvBuf, 
+                          count: 1, 
+                          datatype: .int, 
+                          op: .sum, 
+                          root: 0)
+        }
+    }
+    
+    if rank == 0 {
+        print("Sum of all ranks: \(recvValue[0])")
+    }
+} catch {
+    print("Reduce failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{Communicator.allReduce(sendBuffer:recvBuffer:count:datatype:op:)}
+
+Allreduce operation - reduce and broadcast result to all processes.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let rank = comm.rank()
+let sendValue: [Double] = [Double(rank) * 1.5]
+var recvValue: [Double] = [0.0]
+
+do {
+    try sendValue.withUnsafeBufferPointer { sendBuf in
+        try recvValue.withUnsafeMutableBufferPointer { recvBuf in
+            try comm.allReduce(sendBuffer: sendBuf, 
+                             recvBuffer: recvBuf, 
+                             count: 1, 
+                             datatype: .double, 
+                             op: .sum)
+        }
+    }
+    print("Process \(rank): sum = \(recvValue[0])")
+} catch {
+    print("AllReduce failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{Communicator.gather(sendBuffer:sendCount:sendType:recvBuffer:recvCount:recvType:root:)}
+
+Gather operation - collect data from all processes to root.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let rank = comm.rank()
+let sendData: [Int32] = [Int32(rank), Int32(rank * 2)]
+var recvData = [Int32](repeating: 0, count: comm.size() * 2)
+
+do {
+    try sendData.withUnsafeBufferPointer { sendBuf in
+        try recvData.withUnsafeMutableBufferPointer { recvBuf in
+            try comm.gather(sendBuffer: sendBuf, 
+                          sendCount: 2, 
+                          sendType: .int, 
+                          recvBuffer: recvBuf, 
+                          recvCount: 2, 
+                          recvType: .int, 
+                          root: 0)
+        }
+    }
+    
+    if rank == 0 {
+        print("Gathered data: \(recvData)")
+    }
+} catch {
+    print("Gather failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{Communicator.scatter(sendBuffer:sendCount:sendType:recvBuffer:recvCount:recvType:root:)}
+
+Scatter operation - distribute data from root to all processes.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let rank = comm.rank()
+var sendData: [Int32] = []
+var recvData = [Int32](repeating: 0, count: 2)
+
+if rank == 0 {
+    sendData = [0, 0, 1, 2, 2, 4, 3, 6] // Data for 4 processes
+}
+
+do {
+    try sendData.withUnsafeBufferPointer { sendBuf in
+        try recvData.withUnsafeMutableBufferPointer { recvBuf in
+            try comm.scatter(sendBuffer: sendBuf, 
+                           sendCount: 2, 
+                           sendType: .int, 
+                           recvBuffer: recvBuf, 
+                           recvCount: 2, 
+                           recvType: .int, 
+                           root: 0)
+        }
+    }
+    print("Process \(rank) received: \(recvData)")
+} catch {
+    print("Scatter failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{Communicator.allGather(sendBuffer:sendCount:sendType:recvBuffer:recvCount:recvType:)}
+
+Allgather operation - gather data from all processes to all processes.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let rank = comm.rank()
+let sendData: [Int32] = [Int32(rank)]
+var recvData = [Int32](repeating: 0, count: comm.size())
+
+do {
+    try sendData.withUnsafeBufferPointer { sendBuf in
+        try recvData.withUnsafeMutableBufferPointer { recvBuf in
+            try comm.allGather(sendBuffer: sendBuf, 
+                             sendCount: 1, 
+                             sendType: .int, 
+                             recvBuffer: recvBuf, 
+                             recvCount: 1, 
+                             recvType: .int)
+        }
+    }
+    print("Process \(rank) has all data: \(recvData)")
+} catch {
+    print("AllGather failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{Communicator.allToAll(sendBuffer:sendCount:sendType:recvBuffer:recvCount:recvType:)}
+
+Alltoall operation - each process sends distinct data to each process.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let rank = comm.rank()
+let size = comm.size()
+let sendData = (0..<size).map { Int32(rank * size + $0) }
+var recvData = [Int32](repeating: 0, count: size)
+
+do {
+    try sendData.withUnsafeBufferPointer { sendBuf in
+        try recvData.withUnsafeMutableBufferPointer { recvBuf in
+            try comm.allToAll(sendBuffer: sendBuf, 
+                            sendCount: 1, 
+                            sendType: .int, 
+                            recvBuffer: recvBuf, 
+                            recvCount: 1, 
+                            recvType: .int)
+        }
+    }
+    print("Process \(rank) received: \(recvData)")
+} catch {
+    print("AllToAll failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{Communicator.scan(sendBuffer:recvBuffer:count:datatype:op:)}
+
+Scan operation - inclusive prefix reduction across all processes.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let rank = comm.rank()
+let sendValue: [Int32] = [Int32(rank + 1)]
+var recvValue: [Int32] = [0]
+
+do {
+    try sendValue.withUnsafeBufferPointer { sendBuf in
+        try recvValue.withUnsafeMutableBufferPointer { recvBuf in
+            try comm.scan(sendBuffer: sendBuf, 
+                         recvBuffer: recvBuf, 
+                         count: 1, 
+                         datatype: .int, 
+                         op: .sum)
+        }
+    }
+    print("Process \(rank): prefix sum = \(recvValue[0])")
+} catch {
+    print("Scan failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{Communicator.exScan(sendBuffer:recvBuffer:count:datatype:op:)}
+
+Exscan operation - exclusive prefix reduction across all processes.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let rank = comm.rank()
+let sendValue: [Int32] = [Int32(rank + 1)]
+var recvValue: [Int32] = [0]
+
+do {
+    try sendValue.withUnsafeBufferPointer { sendBuf in
+        try recvValue.withUnsafeMutableBufferPointer { recvBuf in
+            try comm.exScan(sendBuffer: sendBuf, 
+                           recvBuffer: recvBuf, 
+                           count: 1, 
+                           datatype: .int, 
+                           op: .sum)
+        }
+    }
+    print("Process \(rank): exclusive prefix sum = \(recvValue[0])")
+} catch {
+    print("ExScan failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{Communicator.gatherV(sendBuffer:sendCount:sendType:recvBuffer:recvCounts:displacements:recvType:root:)}
+
+Gatherv operation - gather variable amounts of data to root process.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let rank = comm.rank()
+let sendCount = Int32(rank + 1)
+let sendData = (0..<Int(sendCount)).map { Int32($0) }
+var recvData = [Int32](repeating: 0, count: 10)
+let recvCounts: [Int32] = [1, 2, 3, 4] // For 4 processes
+let displacements: [Int32] = [0, 1, 3, 6]
+
+do {
+    try sendData.withUnsafeBufferPointer { sendBuf in
+        try recvData.withUnsafeMutableBufferPointer { recvBuf in
+            try comm.gatherV(sendBuffer: sendBuf, 
+                           sendCount: sendCount, 
+                           sendType: .int, 
+                           recvBuffer: recvBuf, 
+                           recvCounts: recvCounts, 
+                           displacements: displacements, 
+                           recvType: .int, 
+                           root: 0)
+        }
+    }
+    
+    if rank == 0 {
+        print("Gathered variable data: \(recvData)")
+    }
+} catch {
+    print("GatherV failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{Communicator.scatterV(sendBuffer:sendCounts:displacements:sendType:recvBuffer:recvCount:recvType:root:)}
+
+Scatterv operation - scatter variable amounts of data from root process.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let rank = comm.rank()
+var sendData: [Int32] = []
+var recvData = [Int32](repeating: 0, count: rank + 1)
+let sendCounts: [Int32] = [1, 2, 3, 4]
+let displacements: [Int32] = [0, 1, 3, 6]
+
+if rank == 0 {
+    sendData = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+}
+
+do {
+    try sendData.withUnsafeBufferPointer { sendBuf in
+        try recvData.withUnsafeMutableBufferPointer { recvBuf in
+            try comm.scatterV(sendBuffer: sendBuf, 
+                            sendCounts: sendCounts, 
+                            displacements: displacements, 
+                            sendType: .int, 
+                            recvBuffer: recvBuf, 
+                            recvCount: Int32(rank + 1), 
+                            recvType: .int, 
+                            root: 0)
+        }
+    }
+    print("Process \(rank) received: \(recvData)")
+} catch {
+    print("ScatterV failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{Communicator.allGatherV(sendBuffer:sendCount:sendType:recvBuffer:recvCounts:displacements:recvType:)}
+
+Allgatherv operation - gather variable amounts of data to all processes.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let rank = comm.rank()
+let sendCount = Int32(rank + 1)
+let sendData = (0..<Int(sendCount)).map { Int32($0) }
+var recvData = [Int32](repeating: 0, count: 10)
+let recvCounts: [Int32] = [1, 2, 3, 4]
+let displacements: [Int32] = [0, 1, 3, 6]
+
+do {
+    try sendData.withUnsafeBufferPointer { sendBuf in
+        try recvData.withUnsafeMutableBufferPointer { recvBuf in
+            try comm.allGatherV(sendBuffer: sendBuf, 
+                              sendCount: sendCount, 
+                              sendType: .int, 
+                              recvBuffer: recvBuf, 
+                              recvCounts: recvCounts, 
+                              displacements: displacements, 
+                              recvType: .int)
+        }
+    }
+    print("Process \(rank) has all variable data: \(recvData)")
+} catch {
+    print("AllGatherV failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{Communicator.allToAllV(sendBuffer:sendCounts:sendDisplacements:sendType:recvBuffer:recvCounts:recvDisplacements:recvType:)}
+
+Alltoallv operation - all-to-all with variable amounts of data.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let rank = comm.rank()
+let size = comm.size()
+
+// Prepare variable send data
+let sendCounts: [Int32] = [1, 2, 1, 2] // For 4 processes
+let sendDisplacements: [Int32] = [0, 1, 3, 4]
+var sendData: [Int32] = [Int32(rank), Int32(rank), Int32(rank), Int32(rank), Int32(rank), Int32(rank)]
+
+let recvCounts: [Int32] = [1, 2, 1, 2]
+let recvDisplacements: [Int32] = [0, 1, 3, 4]
+var recvData = [Int32](repeating: 0, count: 6)
+
+do {
+    try sendData.withUnsafeBufferPointer { sendBuf in
+        try recvData.withUnsafeMutableBufferPointer { recvBuf in
+            try comm.allToAllV(sendBuffer: sendBuf, 
+                             sendCounts: sendCounts, 
+                             sendDisplacements: sendDisplacements, 
+                             sendType: .int, 
+                             recvBuffer: recvBuf, 
+                             recvCounts: recvCounts, 
+                             recvDisplacements: recvDisplacements, 
+                             recvType: .int)
+        }
+    }
+    print("Process \(rank) received: \(recvData)")
+} catch {
+    print("AllToAllV failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{Communicator.probe(source:tag:)}
+
+Probe operation - check for incoming message without receiving it.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+
+do {
+    let status = try comm.probe(source: 0, tag: 0)
+    print("Message available from process \(status.source) with tag \(status.tag)")
+} catch {
+    print("Probe failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{Communicator.iprobe(source:tag:)}
+
+Iprobe operation - non-blocking probe for incoming message.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+
+do {
+    let (found, status) = try comm.iprobe(source: 0, tag: 0)
+    if found, let stat = status {
+        print("Message available from process \(stat.source)")
+    } else {
+        print("No message available yet")
+    }
+} catch {
+    print("Iprobe failed: \(error)")
+}
+\end{lstlisting}
+
+\section{Datatypes}
+
+SwiftMPI provides predefined datatypes for common data types:
+
+\begin{itemize}
+    \item \texttt{Datatype.char} - 8-bit signed character
+    \item \texttt{Datatype.short} - 16-bit signed integer
+    \item \texttt{Datatype.int} - 32-bit signed integer
+    \item \texttt{Datatype.long} - 64-bit signed integer
+    \item \texttt{Datatype.longLong} - 64-bit signed integer
+    \item \texttt{Datatype.unsignedChar} - 8-bit unsigned character
+    \item \texttt{Datatype.unsignedShort} - 16-bit unsigned integer
+    \item \texttt{Datatype.unsigned} - 32-bit unsigned integer
+    \item \texttt{Datatype.unsignedLong} - 64-bit unsigned integer
+    \item \texttt{Datatype.unsignedLongLong} - 64-bit unsigned integer
+    \item \texttt{Datatype.float} - 32-bit floating point
+    \item \texttt{Datatype.double} - 64-bit floating point
+    \item \texttt{Datatype.longDouble} - Extended precision float
+    \item \texttt{Datatype.byte} - Raw byte data
+    \item \texttt{Datatype.packed} - Packed data type
+    \item \texttt{Datatype.cBool} - C boolean type
+    \item \texttt{Datatype.cFloatComplex} - Complex float
+    \item \texttt{Datatype.cDoubleComplex} - Complex double
+    \item \texttt{Datatype.cLongDoubleComplex} - Complex long double
+\end{itemize}
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let data: [Double] = [3.14, 2.71]
+
+do {
+    try data.withUnsafeBufferPointer { buffer in
+        try comm.send(buffer, count: data.count, 
+                     datatype: .double, dest: 1, tag: 0)
+    }
+} catch {
+    print("Send failed: \(error)")
+}
+\end{lstlisting}
+
+\section{Reduction Operations}
+
+SwiftMPI provides predefined reduction operations:
+
+\begin{itemize}
+    \item \texttt{Operation.max} - Maximum value operation
+    \item \texttt{Operation.min} - Minimum value operation
+    \item \texttt{Operation.sum} - Sum operation
+    \item \texttt{Operation.product} - Product operation
+    \item \texttt{Operation.logicalAnd} - Logical AND operation
+    \item \texttt{Operation.bitwiseAnd} - Bitwise AND operation
+    \item \texttt{Operation.logicalOr} - Logical OR operation
+    \item \texttt{Operation.bitwiseOr} - Bitwise OR operation
+    \item \texttt{Operation.logicalXor} - Logical XOR operation
+    \item \texttt{Operation.bitwiseXor} - Bitwise XOR operation
+    \item \texttt{Operation.minLoc} - Minimum with location
+    \item \texttt{Operation.maxLoc} - Maximum with location
+\end{itemize}
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+let rank = comm.rank()
+let values: [Int32] = [Int32(rank * 10)]
+var result: [Int32] = [0]
+
+do {
+    try values.withUnsafeBufferPointer { sendBuf in
+        try result.withUnsafeMutableBufferPointer { recvBuf in
+            // Find maximum value across all processes
+            try comm.reduce(sendBuffer: sendBuf, 
+                          recvBuffer: recvBuf, 
+                          count: 1, 
+                          datatype: .int, 
+                          op: .max, 
+                          root: 0)
+        }
+    }
+    
+    if rank == 0 {
+        print("Maximum value: \(result[0])")
+    }
+} catch {
+    print("Reduce failed: \(error)")
+}
+\end{lstlisting}
+
+\section{Status}
+
+\subsection{Status.source}
+
+Get source rank of received message.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+var buffer = [Int32](repeating: 0, count: 5)
+
+do {
+    let status = try buffer.withUnsafeMutableBufferPointer { buf in
+        try comm.receive(buf, count: 5, datatype: .int, 
+                        source: -1, tag: -1) // Receive from any source
+    }
+    print("Received message from process \(status.source)")
+    print("Message tag: \(status.tag)")
+    print("Element count: \(status.elementCount)")
+} catch {
+    print("Receive failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{Status.tag}
+
+Get tag of received message.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+var buffer = [Int32](repeating: 0, count: 10)
+
+do {
+    let status = try buffer.withUnsafeMutableBufferPointer { buf in
+        try comm.receive(buf, count: 10, datatype: .int, 
+                        source: -1, tag: -1) // Receive with any tag
+    }
+    print("Received message with tag \(status.tag)")
+} catch {
+    print("Receive failed: \(error)")
+}
+\end{lstlisting}
+
+\subsection{Status.count(datatype:)}
+
+Get count of received elements for given datatype.
+
+\textbf{Usage:}
+\begin{lstlisting}
+import SwiftMPI
+
+let comm = SwiftMPI.world
+var buffer = [Int32](repeating: 0, count: 10)
+
+do {
+    let status = try buffer.withUnsafeMutableBufferPointer { buf in
+        try comm.receive(buf, count: 10, datatype: .int, 
+                        source: 0, tag: 0)
+    }
+    let elementCount = status.count(datatype: .int)
+    print("Received \(elementCount) elements")
+} catch {
+    print("Receive failed: \(error)")
+}
+\end{lstlisting}
+
+\section{Complete Example}
+
+Here is a complete example demonstrating multiple SwiftMPI functions:
+
+\begin{lstlisting}
+import SwiftMPI
+
+do {
+    // Initialize MPI
+    try SwiftMPI.initialize()
+    
+    let comm = SwiftMPI.world
+    let rank = comm.rank()
+    let size = comm.size()
+    
+    print("Process \(rank) of \(size) started")
+    
+    // Barrier synchronization
+    try comm.barrier()
+    
+    // Point-to-point communication
+    if rank == 0 {
+        let data: [Int32] = [1, 2, 3, 4, 5]
+        try comm.send(data, to: 1, tag: 0)
+        print("Process 0 sent data to process 1")
+    } else if rank == 1 {
+        let received = try comm.receive(count: 5, from: 0, tag: 0)
+        print("Process 1 received: \(received)")
+    }
+    
+    // Broadcast
+    var broadcastData: [Int32] = [0, 0, 0]
+    if rank == 0 {
+        broadcastData = [10, 20, 30]
+    }
+    try broadcastData.withUnsafeMutableBufferPointer { buffer in
+        try comm.broadcast(buffer, count: 3, datatype: .int, root: 0)
+    }
+    print("Process \(rank) received broadcast: \(broadcastData)")
+    
+    // Reduce operation
+    let sendValue: [Int32] = [Int32(rank + 1)]
+    var recvValue: [Int32] = [0]
+    try sendValue.withUnsafeBufferPointer { sendBuf in
+        try recvValue.withUnsafeMutableBufferPointer { recvBuf in
+            try comm.reduce(sendBuffer: sendBuf, 
+                          recvBuffer: recvBuf, 
+                          count: 1, 
+                          datatype: .int, 
+                          op: .sum, 
+                          root: 0)
+        }
+    }
+    if rank == 0 {
+        print("Sum of all ranks: \(recvValue[0])")
+    }
+    
+    // AllReduce
+    let allSendValue: [Double] = [Double(rank) * 1.5]
+    var allRecvValue: [Double] = [0.0]
+    try allSendValue.withUnsafeBufferPointer { sendBuf in
+        try allRecvValue.withUnsafeMutableBufferPointer { recvBuf in
+            try comm.allReduce(sendBuffer: sendBuf, 
+                             recvBuffer: recvBuf, 
+                             count: 1, 
+                             datatype: .double, 
+                             op: .sum)
+        }
+    }
+    print("Process \(rank): all-reduce sum = \(allRecvValue[0])")
+    
+    // Finalize MPI
+    try SwiftMPI.finalize()
+    
+} catch {
+    print("MPI error: \(error)")
+    exit(1)
+}
+\end{lstlisting}
+
+\section{Error Handling}
+
+All SwiftMPI functions that can fail throw \texttt{MPIError} exceptions. Always wrap MPI calls in do-catch blocks:
+
+\begin{lstlisting}
+import SwiftMPI
+
+do {
+    try SwiftMPI.initialize()
+    // ... use MPI functions ...
+    try SwiftMPI.finalize()
+} catch MPIError.alreadyInitialized {
+    print("MPI already initialized")
+} catch MPIError.notInitialized {
+    print("MPI not initialized")
+} catch MPIError.communicationFailed {
+    print("Communication failed")
+} catch {
+    print("Other MPI error: \(error)")
+}
+\end{lstlisting}
+
+\section{MPIError Types}
+
+The following error types are defined:
+
+\begin{itemize}
+    \item \texttt{MPIError.alreadyInitialized} - MPI already initialized
+    \item \texttt{MPIError.notInitialized} - MPI not initialized
+    \item \texttt{MPIError.initializationFailed} - MPI initialization failed
+    \item \texttt{MPIError.finalizationFailed} - MPI finalization failed
+    \item \texttt{MPIError.invalidCommunicator} - Invalid communicator provided
+    \item \texttt{MPIError.invalidRank} - Invalid rank specified
+    \item \texttt{MPIError.invalidTag} - Invalid message tag
+    \item \texttt{MPIError.invalidDatatype} - Invalid datatype specified
+    \item \texttt{MPIError.communicationFailed} - Communication operation failed
+    \item \texttt{MPIError.operationFailed(operation: String)} - Generic operation failure
+    \item \texttt{MPIError.processSpawnFailed} - Failed to spawn processes
+    \item \texttt{MPIError.connectionFailed} - Failed to establish connection
+\end{itemize}
+
+\end{document}

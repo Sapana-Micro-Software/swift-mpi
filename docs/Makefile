@@ -7,14 +7,17 @@ RM = rm -f
 
 PAPER = paper
 PRESENTATION = presentation
+REFERENCE = reference
 
-.PHONY: all paper presentation clean
+.PHONY: all paper presentation reference clean
 
-all: paper presentation
+all: paper presentation reference
 
 paper: $(PAPER).pdf
 
 presentation: $(PRESENTATION).pdf
+
+reference: $(REFERENCE).pdf
 
 $(PAPER).pdf: $(PAPER).tex
 	$(LATEX) $(PAPER).tex
@@ -24,6 +27,9 @@ $(PAPER).pdf: $(PAPER).tex
 
 $(PRESENTATION).pdf: $(PRESENTATION).tex
 	$(LATEX) $(PRESENTATION).tex
+
+$(REFERENCE).pdf: $(REFERENCE).tex
+	$(LATEX) $(REFERENCE).tex
 
 clean:
 	$(RM) *.aux *.log *.out *.toc *.nav *.snm *.bbl *.blg *.synctex.gz
