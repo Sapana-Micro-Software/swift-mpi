@@ -1,0 +1,6 @@
+# Jekyll Gemfile for SwiftMPI Project Page
+source "https://rubygems.org"
+
+# Use Jekyll for GitHub Pages
+gem "jekyll", "~> 4.3"
+gem "webrick", "~> 1.7"

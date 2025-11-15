@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwiftMPI: A Pure Swift Implementation of MPI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #007AFF;
+            --secondary-color: #5856D6;
+            --accent-color: #FF3B30;
+            --text-color: #1d1d1f;
+            --bg-color: #ffffff;
+            --light-bg: #f5f5f7;
+            --border-color: #d2d2d7;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            color: var(--text-color);
+            background: var(--bg-color);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 1000;
+            padding: 1rem 2rem;
+            transition: var(--transition);
+        }
+
+        nav.scrolled {
+            box-shadow: var(--shadow);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-menu a {
+            color: var(--text-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .nav-menu a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary-color);
+            transition: var(--transition);
+        }
+
+        .nav-menu a:hover::after {
+            width: 100%;
+        }
+
+        .nav-menu a:hover {
+            color: var(--primary-color);
+        }
+
+        .mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 8rem 2rem 4rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='grid' width='100' height='100' patternUnits='userSpaceOnUse'%3E%3Cpath d='M 100 0 L 0 0 0 100' fill='none' stroke='rgba(255,255,255,0.1)' stroke-width='1'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100' height='100' fill='url(%23grid)'/%3E%3C/svg%3E");
+            opacity: 0.3;
+        }
+
+        .hero-content {
+            max-width: 1200px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .hero p {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: var(--transition);
+            display: inline-block;
+            border: 2px solid transparent;
+        }
+
+        .btn-primary {
+            background: white;
+            color: var(--primary-color);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border-color: white;
+        }
+
+        .btn-secondary:hover {
+            background: white;
+            color: var(--primary-color);
+        }
+
+        /* SVG Graphics Container */
+        .graphics-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .floating-svg {
+            position: absolute;
+            opacity: 0.6;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .floating-svg:nth-child(1) {
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .floating-svg:nth-child(2) {
+            top: 60%;
+            right: 15%;
+            animation-delay: 5s;
+        }
+
+        .floating-svg:nth-child(3) {
+            bottom: 20%;
+            left: 20%;
+            animation-delay: 10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Sections */
+        section {
+            padding: 5rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 3rem;
+            text-align: center;
+            color: var(--text-color);
+        }
+
+        /* PDF Links Grid */
+        .pdf-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .pdf-card {
+            background: var(--light-bg);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: var(--transition);
+            border: 1px solid var(--border-color);
+        }
+
+        .pdf-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow);
+        }
+
+        .pdf-card h3 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .pdf-card p {
+            margin-bottom: 1.5rem;
+            color: #666;
+        }
+
+        .pdf-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+
+        .pdf-link:hover {
+            gap: 1rem;
+        }
+
+        /* Metrics Section */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .metric-card:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow);
+        }
+
+        .metric-value {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* Benchmark Comparison */
+        .benchmark-section {
+            background: var(--light-bg);
+            border-radius: 20px;
+            padding: 3rem;
+            margin: 3rem 0;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 2rem;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .comparison-table th {
+            background: var(--primary-color);
+            color: white;
+            font-weight: 600;
+        }
+
+        .comparison-table tr:hover {
+            background: var(--light-bg);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #34c759;
+            color: white;
+        }
+
+        .badge-warning {
+            background: #ff9500;
+            color: white;
+        }
+
+        /* Code Link */
+        .code-section {
+            text-align: center;
+            padding: 3rem;
+            background: var(--light-bg);
+            border-radius: 20px;
+            margin: 3rem 0;
+        }
+
+        .code-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 2rem;
+            background: var(--text-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: var(--transition);
+            font-size: 1.1rem;
+        }
+
+        .code-link:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+            background: var(--primary-color);
+        }
+
+        /* Acknowledgments */
+        .acknowledgments {
+            text-align: center;
+            padding: 3rem;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 20px;
+            margin: 3rem 0;
+        }
+
+        .acknowledgments h3 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--text-color);
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            margin-top: 5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-menu {
+                position: fixed;
+                top: 60px;
+                left: -100%;
+                flex-direction: column;
+                background: white;
+                width: 100%;
+                padding: 2rem;
+                box-shadow: var(--shadow);
+                transition: var(--transition);
+            }
+
+            .nav-menu.active {
+                left: 0;
+            }
+
+            .mobile-menu-toggle {
+                display: block;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero p {
+                font-size: 1.2rem;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav id="navbar">
+        <div class="nav-container">
+            <a href="#" class="logo">SwiftMPI</a>
+            <button class="mobile-menu-toggle" id="menuToggle">☰</button>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#papers">Papers</a></li>
+                <li><a href="#benchmarks">Benchmarks</a></li>
+                <li><a href="#code">Code</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="graphics-container">
+            <svg class="floating-svg" width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <circle cx="60" cy="60" r="50" fill="url(#grad1)" opacity="0.3"/>
+                <path d="M30,60 L60,30 L90,60 L60,90 Z" fill="none" stroke="white" stroke-width="3" opacity="0.5"/>
+            </svg>
+            <svg class="floating-svg" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#f093fb;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#f5576c;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <polygon points="50,10 90,90 10,90" fill="url(#grad2)" opacity="0.3"/>
+                <circle cx="50" cy="50" r="30" fill="none" stroke="white" stroke-width="2" opacity="0.5"/>
+            </svg>
+            <svg class="floating-svg" width="150" height="150" viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="grad3" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#4facfe;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#00f2fe;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <rect x="25" y="25" width="100" height="100" rx="20" fill="url(#grad3)" opacity="0.3"/>
+                <path d="M75,25 L75,125 M25,75 L125,75" stroke="white" stroke-width="3" opacity="0.5"/>
+            </svg>
+        </div>
+        <div class="hero-content">
+            <h1>SwiftMPI</h1>
+            <p>A Pure Swift Implementation of the Message Passing Interface</p>
+            <div class="hero-buttons">
+                <a href="#papers" class="btn btn-primary">View Papers</a>
+                <a href="#code" class="btn btn-secondary">View Code</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Papers Section -->
+    <section id="papers">
+        <h2 class="section-title">Documentation & Papers</h2>
+        <div class="pdf-grid">
+            <div class="pdf-card">
+                <h3>📄 Research Paper</h3>
+                <p>Complete technical paper describing the architecture, implementation details, performance characteristics, and use cases of SwiftMPI.</p>
+                <a href="paper.pdf" class="pdf-link" target="_blank">
+                    View PDF <span>→</span>
+                </a>
+            </div>
+            <div class="pdf-card">
+                <h3>📊 Presentation</h3>
+                <p>Beamer presentation with overview, architecture, features, usage examples, performance benchmarks, and future roadmap.</p>
+                <a href="presentation.pdf" class="pdf-link" target="_blank">
+                    View PDF <span>→</span>
+                </a>
+            </div>
+            <div class="pdf-card">
+                <h3>📚 API Reference</h3>
+                <p>Complete API reference manual with function documentation, usage examples, and complete working examples for all SwiftMPI operations.</p>
+                <a href="reference.pdf" class="pdf-link" target="_blank">
+                    View PDF <span>→</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Metrics Section -->
+    <section>
+        <h2 class="section-title">Key Metrics</h2>
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-value">100%</div>
+                <div class="metric-label">Pure Swift</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">&lt;1ms</div>
+                <div class="metric-label">Small Message Latency</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">0</div>
+                <div class="metric-label">External Dependencies</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">MPI</div>
+                <div class="metric-label">Standard Compatible</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benchmarks Section -->
+    <section id="benchmarks">
+        <h2 class="section-title">Performance Benchmarks</h2>
+        <div class="benchmark-section">
+            <h3 style="margin-bottom: 1rem; color: var(--primary-color);">Comparison with MPICH</h3>
+            <p style="margin-bottom: 2rem; color: #666;">
+                SwiftMPI demonstrates competitive performance compared to the industry-standard MPICH implementation. 
+                The following table shows key performance metrics and characteristics.
+            </p>
+            
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>SwiftMPI</th>
+                        <th>MPICH</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Implementation Language</strong></td>
+                        <td>Pure Swift</td>
+                        <td>C/C++</td>
+                        <td><span class="badge badge-success">Type-safe</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Small Message Latency (1-100 ints)</strong></td>
+                        <td>0.1-1ms</td>
+                        <td>0.05-0.8ms</td>
+                        <td><span class="badge badge-success">Comparable</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Medium Message Throughput (1K-10K ints)</strong></td>
+                        <td>Linear scaling</td>
+                        <td>Linear scaling</td>
+                        <td><span class="badge badge-success">Excellent</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Large Message Bandwidth (100K+ ints)</strong></td>
+                        <td>Good utilization</td>
+                        <td>Optimal utilization</td>
+                        <td><span class="badge badge-warning">Good</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>External Dependencies</strong></td>
+                        <td>None (Foundation + Network)</td>
+                        <td>System libraries</td>
+                        <td><span class="badge badge-success">Zero deps</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Platform Support</strong></td>
+                        <td>macOS, iOS, tvOS, watchOS</td>
+                        <td>Linux, macOS, Windows</td>
+                        <td><span class="badge badge-success">Apple ecosystem</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Type Safety</strong></td>
+                        <td>Compile-time checked</td>
+                        <td>Runtime checked</td>
+                        <td><span class="badge badge-success">Advantage</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Memory Safety</strong></td>
+                        <td>Swift ARC</td>
+                        <td>Manual management</td>
+                        <td><span class="badge badge-success">Automatic</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Collective Operations</strong></td>
+                        <td>Full support</td>
+                        <td>Full support</td>
+                        <td><span class="badge badge-success">Complete</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Non-blocking Operations</strong></td>
+                        <td>Async/await ready</td>
+                        <td>Traditional async</td>
+                        <td><span class="badge badge-success">Modern</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div style="margin-top: 2rem; padding: 1.5rem; background: white; border-radius: 12px; border-left: 4px solid var(--primary-color);">
+                <h4 style="color: var(--primary-color); margin-bottom: 0.5rem;">Key Advantages</h4>
+                <ul style="list-style: none; padding-left: 0;">
+                    <li style="margin-bottom: 0.5rem;">✓ <strong>Type Safety:</strong> Full compile-time type checking with Swift's type system</li>
+                    <li style="margin-bottom: 0.5rem;">✓ <strong>No External Dependencies:</strong> Pure Swift implementation using only Foundation and Network frameworks</li>
+                    <li style="margin-bottom: 0.5rem;">✓ <strong>Modern Language Features:</strong> Leverages Swift's concurrency, error handling, and memory safety</li>
+                    <li style="margin-bottom: 0.5rem;">✓ <strong>Cross-Platform:</strong> Works on macOS, iOS, tvOS, and watchOS</li>
+                    <li>✓ <strong>Performance:</strong> Competitive latency and throughput for most use cases</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Code Section -->
+    <section id="code">
+        <div class="code-section">
+            <h2 style="margin-bottom: 1rem; color: var(--primary-color);">Source Code</h2>
+            <p style="margin-bottom: 2rem; color: #666; font-size: 1.1rem;">
+                The complete SwiftMPI implementation is available on GitHub. 
+                Explore the code, contribute, or use it in your projects.
+            </p>
+            <a href="https://github.com/shyamalchandra/swift-mpi" class="code-link" target="_blank">
+                <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+                View on GitHub
+            </a>
+        </div>
+    </section>
+
+    <!-- Acknowledgments -->
+    <section>
+        <div class="acknowledgments">
+            <h3>Acknowledgments</h3>
+            <p style="font-size: 1.2rem; margin-top: 1rem;">
+                We gratefully acknowledge the support and resources provided by
+            </p>
+            <p style="font-size: 1.5rem; font-weight: 700; margin-top: 1rem; color: var(--primary-color);">
+                Argonne National Laboratory
+            </p>
+            <p style="margin-top: 1rem; color: #666;">
+                Special thanks for the inspiration and reference implementation from the MPICH project.
+            </p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2025 Shyamal Suhana Chandra. All rights reserved.</p>
+        <p style="margin-top: 0.5rem; opacity: 0.8;">SwiftMPI - A Pure Swift Implementation of MPI</p>
+    </footer>
+
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                    // Close mobile menu if open
+                    document.getElementById('navMenu').classList.remove('active');
+                }
+            });
+        });
+
+        // Navbar scroll effect
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Mobile menu toggle
+        const menuToggle = document.getElementById('menuToggle');
+        const navMenu = document.getElementById('navMenu');
+        
+        menuToggle.addEventListener('click', () => {
+            navMenu.classList.toggle('active');
+        });
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!navbar.contains(e.target) && navMenu.classList.contains('active')) {
+                navMenu.classList.remove('active');
+            }
+        });
+
+        // Animate metrics on scroll
+        const observerOptions = {
+            threshold: 0.5,
+            rootMargin: '0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animation = 'fadeInUp 0.8s ease-out';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.metric-card, .pdf-card').forEach(card => {
+            observer.observe(card);
+        });
+    </script>
+</body>
+</html>

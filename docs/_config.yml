@@ -1,0 +1,43 @@
+# Jekyll Configuration for SwiftMPI Project Page
+title: SwiftMPI
+description: A Pure Swift Implementation of the Message Passing Interface
+author: Shyamal Suhana Chandra
+year: 2025
+
+# Site settings for GitHub Pages
+# Update these with your actual GitHub username and repository name
+# url: "https://shyamalchandra.github.io"  # Uncomment and update
+# baseurl: "/swift-mpi"  # Uncomment if repository is not at root, or leave empty for root
+
+# Build settings
+markdown: kramdown
+theme: null
+plugins: []
+
+# GitHub Pages settings
+github: [metadata]
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - "*.aux"
+  - "*.log"
+  - "*.out"
+  - "*.toc"
+  - "*.nav"
+  - "*.snm"
+  - "*.bbl"
+  - "*.blg"
+  - "*.vrb"
+  - "*.tex"
+  - Makefile
+
+# PDF files to include
+include:
+  - "*.pdf"
